@@ -7,7 +7,7 @@ import service.MyLogger;
 
 import java.sql.*;
 public class DbConnectivityClass {
-    final static String DB_URL = "jdbc:derby:CSC311_DB;create=true";//update this database name
+    public final static String DB_URL = "jdbc:derby:CSC311_DB;create=true";//update this database name
 
         MyLogger lg= new MyLogger();
 
@@ -16,78 +16,112 @@ public class DbConnectivityClass {
         // Method to retrieve all data from the database and store it into an observable list to use in the GUI tableview.
 
 
-        public ObservableList<Person> getData() {
-            data.clear();
-            connectToDatabase();
-            try {
-                Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement preparedStatement = conn.prepareStatement("SELECT * FROM users");
-                ResultSet resultSet = preparedStatement.executeQuery();
+    public ObservableList<Person> getData() {
+        data.clear();
+        connectToDatabase();
 
-                if (!resultSet.isBeforeFirst()) {
-                    lg.makeLog("No data");
-                }
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement preparedStatement = conn.prepareStatement("SELECT * FROM users");
+             ResultSet resultSet = preparedStatement.executeQuery()) {
 
-                while (resultSet.next()) {
-                    int id = resultSet.getInt("id");
-                    String first_name = resultSet.getString("first_name");
-                    String last_name = resultSet.getString("last_name");
-                    String department = resultSet.getString("department");
-                    String major = resultSet.getString("major");
-                    String email = resultSet.getString("email");
-                    String imageURL = resultSet.getString("imageURL");
+            boolean hasData = false;
 
-                    data.add(new Person(id, first_name, last_name, department, major, email, imageURL));
-                }
+            while (resultSet.next()) {
+                hasData = true;
 
-            } catch (SQLException e) {
-                e.printStackTrace();
+                int id = resultSet.getInt("id");
+                String first_name = resultSet.getString("first_name");
+                String last_name = resultSet.getString("last_name");
+                String department = resultSet.getString("department");
+                String major = resultSet.getString("major");
+                String email = resultSet.getString("email");
+                String imageURL = resultSet.getString("imageURL");
+
+                data.add(new Person(id, first_name, last_name, department, major, email, imageURL));
             }
-            return data;
+
+            if (!hasData) {
+                lg.makeLog("No data");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
-        public boolean connectToDatabase() {
-            boolean hasRegistredUsers = false;
+        return data;
+    }
+
+    public boolean connectToDatabase() {
+        boolean hasRegisteredUsers = false;
+
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement statement = conn.createStatement()) {
 
             try {
-                Class.forName("org.apache.derby.jdbc.EmbeddedDriver");
-
-                try (Connection conn = DriverManager.getConnection(DB_URL)) {
-                    Statement statement = conn.createStatement();
-
-                    try {
-                        String sql = "CREATE TABLE users ("
-                                + "id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
-                                + "first_name VARCHAR(200) NOT NULL,"
-                                + "last_name VARCHAR(200) NOT NULL,"
-                                + "department VARCHAR(200),"
-                                + "major VARCHAR(200),"
-                                + "email VARCHAR(200) NOT NULL UNIQUE,"
-                                + "imageURL VARCHAR(200))";
-                        statement.executeUpdate(sql);
-                    } catch (SQLException e) {
-                        //table probably already exists
-                    }
-
-                    //check if we have users in the table users
-                    ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM users");
-
-                    if (resultSet.next()) {
-                        int numUsers = resultSet.getInt(1);
-                        if (numUsers > 0) {
-                            hasRegistredUsers = true;
-                        }
-
-                        resultSet.close();
-                        statement.close();
-                    }
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                String sql = "CREATE TABLE users ("
+                        + "id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
+                        + "first_name VARCHAR(200) NOT NULL,"
+                        + "last_name VARCHAR(200) NOT NULL,"
+                        + "department VARCHAR(200),"
+                        + "major VARCHAR(200),"
+                        + "email VARCHAR(200) NOT NULL UNIQUE,"
+                        + "imageURL VARCHAR(200))";
+                statement.executeUpdate(sql);
+                System.out.println("users table created");
+            } catch (SQLException e) {
+                System.out.println("users table already exists");
             }
 
-            return hasRegistredUsers;
+            try {
+                String accountsTableSql = "CREATE TABLE accounts ("
+                        + "id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,"
+                        + "username VARCHAR(100) NOT NULL UNIQUE,"
+                        + "user_password VARCHAR(100) NOT NULL)";
+                statement.executeUpdate(accountsTableSql);
+                System.out.println("accounts table created");
+            } catch (SQLException e) {
+                System.out.println("accounts table already exists");
+            }
+
+            ResultSet resultSet = statement.executeQuery("SELECT COUNT(*) FROM users");
+
+            if (resultSet.next()) {
+                int numUsers = resultSet.getInt(1);
+                if (numUsers > 0) {
+                    hasRegisteredUsers = true;
+                }
+            }
+
+            resultSet.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return hasRegisteredUsers;
+    }
+
+        public static void ensureAccountsTable() {
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+            Statement statement = conn.createStatement()) {
+
+            statement.executeUpdate(
+                    "CREATE TABLE accounts ("
+                        + "id INT GENERATED  ALWAYS AS IDENTITY PRIMARY KEY, "
+                        + "username VARCHAR(100) NOT NULL UNIQUE, "
+                        + "user_password VARCHAR(100) NOT NULL)"
+            );
+
+                System.out.println("accounts table created");
+
+            } catch (SQLException e) {
+                // X0Y32 = table already exists
+                if ("X0Y32".equals(e.getSQLState())) {
+                    System.out.println("accounts table already exists");
+                } else{
+                    e.printStackTrace();
+                }
+            }
         }
 
         public void queryUserByLastName(String name) {

@@ -41,6 +41,15 @@ public class DB_GUI_Controller implements Initializable {
     private TableColumn<Person, Integer> tv_id;
     @FXML
     private TableColumn<Person, String> tv_fn, tv_ln, tv_department, tv_major, tv_email;
+    @FXML
+    private Button editBtn;
+    @FXML
+    private Button deleteBtn;
+    @FXML
+    private MenuItem editItem;
+    @FXML
+    private MenuItem deleteItem;
+
     private final DbConnectivityClass cnUtil = new DbConnectivityClass();
     private final ObservableList<Person> data = cnUtil.getData();
 
@@ -54,6 +63,20 @@ public class DB_GUI_Controller implements Initializable {
             tv_major.setCellValueFactory(new PropertyValueFactory<>("major"));
             tv_email.setCellValueFactory(new PropertyValueFactory<>("email"));
             tv.setItems(data);
+
+            editItem.setDisable(true);
+            deleteItem.setDisable(true);
+            editBtn.setDisable(true);
+            deleteBtn.setDisable(true);
+
+            tv.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+                boolean selected = newSelection != null;
+                editItem.setDisable(!selected);
+                deleteItem.setDisable(!selected);
+                editBtn.setDisable(!selected);
+                deleteBtn.setDisable(!selected);
+            });
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -117,6 +140,8 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     protected void editRecord() {
         Person p = tv.getSelectionModel().getSelectedItem();
+        if (p == null) return;
+
         int index = data.indexOf(p);
         Person p2 = new Person(index + 1, first_name.getText(), last_name.getText(), department.getText(),
                 major.getText(), email.getText(),  imageURL.getText());
@@ -129,6 +154,8 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     protected void deleteRecord() {
         Person p = tv.getSelectionModel().getSelectedItem();
+        if (p == null) return;
+
         int index = data.indexOf(p);
         cnUtil.deleteRecord(p);
         data.remove(index);
@@ -151,6 +178,8 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     protected void selectedItemTV(MouseEvent mouseEvent) {
         Person p = tv.getSelectionModel().getSelectedItem();
+        if (p == null) return;
+
         first_name.setText(p.getFirstName());
         last_name.setText(p.getLastName());
         department.setText(p.getDepartment());
