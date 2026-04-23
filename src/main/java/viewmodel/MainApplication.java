@@ -27,7 +27,7 @@ public class MainApplication extends Application {
         this.primaryStage = primaryStage;
         this.primaryStage.setResizable(false);
         primaryStage.getIcons().add(icon);
-        primaryStage.setTitle("FSC CSC311 _ Database Project");
+        primaryStage.setTitle("Student Profile Manager - Loading...");
         showScene1();
     }
 
@@ -55,6 +55,7 @@ public class MainApplication extends Application {
             fadeOut.setToValue(0);
             fadeOut.setOnFinished(e -> {
                 Scene newScene = new Scene(newRoot, 900, 600);
+                primaryStage.setTitle("Student Profile Manager - Login");
                 primaryStage.setScene(newScene);
                 primaryStage.show();
             });

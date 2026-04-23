@@ -254,4 +254,20 @@ public class DbConnectivityClass {
             lg.makeLog(String.valueOf(id));
             return id;
         }
+
+    public boolean emailExists(String email) {
+        connectToDatabase();
+
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM users WHERE email = ?")) {
+
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     }

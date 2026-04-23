@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 import java.sql.*;
@@ -17,11 +18,26 @@ import java.sql.*;
 
 public class SignUpController {
 
+    private static final String USERNAME_REGEX = "^(?=.{5,20}$)[A-Za-z][A-Za-z0-9_]*$";
+    private static final String PASSWORD_REGEX = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,20}$";
+
     @FXML
     private TextField signupUsernameField;
 
     @FXML
     private PasswordField signupPasswordField;
+
+    @FXML
+    private GridPane rootpane;
+
+    @FXML
+    public void initialize() {
+        rootpane.setFocusTraversable(true);
+
+        rootpane.setOnMousePressed(event -> {
+            rootpane.requestFocus();
+        });
+    }
 
     public void createNewAccount(ActionEvent actionEvent) {
         DbConnectivityClass.ensureAccountsTable();
@@ -29,8 +45,15 @@ public class SignUpController {
         String username = signupUsernameField.getText().trim();
         String password = signupPasswordField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showAlert("Error", "Username and password cannot be empty");
+        if (!isValidUsername(username)) {
+            showAlert("Error",
+                    "Username must be 5-20 characters,\nstart with a letter,\nand contain only letters, numbers, or underscores.");
+            return;
+        }
+
+        if (!isValidPassword(password)) {
+            showAlert("Error",
+                    "Password must be 8-20 characters\nand include at least:\n1 uppercase letter,\n1 lowercase letter,\n1 number,\nand 1 special character.");
             return;
         }
 
@@ -75,6 +98,7 @@ public class SignUpController {
             scene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
             Stage window = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
             window.setScene(scene);
+            window.setTitle("Student Profile Manager - Login");
             window.show();
         } catch (Exception e) {
             e.printStackTrace();
@@ -87,6 +111,14 @@ public class SignUpController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private boolean isValidUsername(String text) {
+        return text != null && text.trim().matches(USERNAME_REGEX);
+    }
+
+    private boolean isValidPassword(String text) {
+        return text != null && text.trim().matches(PASSWORD_REGEX);
     }
 
 }

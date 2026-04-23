@@ -12,11 +12,26 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.scene.control.Alert;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 
+import dao.DbConnectivityClass;
+import service.UserSession;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.prefs.Preferences;
 
 
 public class LoginController {
 
+    @FXML
+    private TextField usernameTextField;
+    @FXML
+    private PasswordField passwordField;
 
     @FXML
     private GridPane rootpane;
@@ -37,6 +52,11 @@ public class LoginController {
         fadeOut2.setFromValue(0);
         fadeOut2.setToValue(1);
         fadeOut2.play();
+
+        rootpane.setFocusTraversable(true);
+        rootpane.setOnMousePressed(event -> {
+            rootpane.requestFocus();
+        });
     }
     private static BackgroundImage createImage(String url) {
         return new BackgroundImage(
@@ -47,15 +67,44 @@ public class LoginController {
     }
     @FXML
     public void login(ActionEvent actionEvent) {
-        try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/db_interface_gui.fxml"));
-            Scene scene = new Scene(root, 900, 600);
-            scene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
-            Stage window = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
-            window.setScene(scene);
-            window.show();
+        String username = usernameTextField.getText().trim();
+        String password = passwordField.getText().trim();
+
+        if (username.isEmpty() || password.isEmpty()) {
+            showAlert("Login Error", "Please enter both username and password.");
+            return;
+        }
+
+        try (Connection conn = DriverManager.getConnection(DbConnectivityClass.DB_URL)) {
+            String sql = "SELECT * FROM accounts WHERE username = ? AND user_password = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, username);
+            ps.setString(2, password);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                UserSession.getInstance(username, password);
+
+                Preferences prefs = Preferences.userRoot();
+                System.out.println("Saved USERNAME: " + prefs.get("USERNAME", "not found"));
+                System.out.println("Saved PASSWORD: " + prefs.get("PASSWORD", "not found"));
+                System.out.println("Saved PRIVILEGES: " + prefs.get("PRIVILEGES", "not found"));
+
+                Parent root = FXMLLoader.load(getClass().getResource("/view/db_interface_gui.fxml"));
+                Scene scene = new Scene(root, 900, 600);
+                scene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
+                Stage window = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
+                window.setTitle("Student Profile Manager");
+                window.setScene(scene);
+                window.show();
+            } else {
+                showAlert("Login Failed", "Invalid username or password.");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
+            showAlert("Error", "Something went wrong during login.");
         }
     }
 
@@ -65,11 +114,20 @@ public class LoginController {
             Scene scene = new Scene(root, 900, 600);
             scene.getStylesheets().add(getClass().getResource("/css/lightTheme.css").toExternalForm());
             Stage window = (Stage) ((Node) actionEvent.getSource()).getScene().getWindow();
+            window.setTitle("Student Profile Manager - Sign Up");
             window.setScene(scene);
             window.show();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
 

@@ -4,6 +4,7 @@ module com.example.csc311_db_ui_semesterlongproject {
     requires java.sql;
     requires org.apache.derby.engine;
     requires java.prefs;
+    requires org.apache.pdfbox;
 
 
     opens viewmodel;
